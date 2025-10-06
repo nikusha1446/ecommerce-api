@@ -66,3 +66,61 @@ export const getProductById = async (req, res) => {
     });
   }
 };
+
+export const createProduct = async (req, res) => {
+  try {
+    const { name, description, price, stock, imageUrl, categoryId } = req.body;
+
+    if (!name || !price || !categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, price, and categoryId',
+      });
+    }
+
+    const category = await prisma.category.findUnique({
+      where: {
+        id: categoryId,
+      },
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found',
+      });
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        description,
+        price,
+        stock: stock || 0,
+        imageUrl,
+        categoryId,
+      },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Product created successfully',
+      data: {
+        product,
+      },
+    });
+  } catch (error) {
+    console.error('Create product error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
