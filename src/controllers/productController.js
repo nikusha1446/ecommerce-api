@@ -124,3 +124,73 @@ export const createProduct = async (req, res) => {
     });
   }
 };
+
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, price, stock, imageUrl, categoryId } = req.body;
+
+    const existingProduct = await prisma.product.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+
+    if (categoryId) {
+      const category = await prisma.category.findUnique({
+        where: {
+          id: categoryId,
+        },
+      });
+
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found',
+        });
+      }
+    }
+
+    const product = await prisma.product.update({
+      where: {
+        id,
+      },
+      data: {
+        ...(name && { name }),
+        ...(description !== undefined && { description }),
+        ...(price && { price }),
+        ...(stock !== undefined && { stock }),
+        ...(imageUrl !== undefined && { imageUrl }),
+        ...(categoryId && { categoryId }),
+      },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Product updated successfully',
+      data: {
+        product,
+      },
+    });
+  } catch (error) {
+    console.error('Update product error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
