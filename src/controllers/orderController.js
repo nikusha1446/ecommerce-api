@@ -131,3 +131,125 @@ export const testConfirmPayment = async (req, res) => {
     });
   }
 };
+
+export const confirmPayment = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { paymentIntentId } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide paymentIntentId',
+      });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment not completed',
+      });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: {
+        paymentIntent: paymentIntentId,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    if (order.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    if (order.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        message: 'Order already processed',
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of order.items) {
+        await tx.product.update({
+          where: {
+            id: item.productId,
+          },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+
+      await tx.order.update({
+        where: {
+          id: order.id,
+        },
+        data: {
+          status: 'PROCESSING',
+        },
+      });
+
+      await tx.cartItem.deleteMany({
+        where: {
+          cart: {
+            userId,
+          },
+        },
+      });
+    });
+
+    const updatedOrder = await prisma.order.findUnique({
+      where: {
+        id: order.id,
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment confirmed and order completed',
+      data: {
+        order: updatedOrder,
+      },
+    });
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
