@@ -127,3 +127,67 @@ export const addToCart = async (req, res) => {
     });
   }
 };
+
+export const getCart = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const cart = await prisma.cart.findUnique({
+      where: {
+        userId,
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                stock: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!cart) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          cart: {
+            items: [],
+            totalItems: 0,
+            totalPrice: 0,
+          },
+        },
+      });
+    }
+
+    const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = cart.items.reduce(
+      (sum, item) => sum + parseFloat(item.product.price) * item.quantity,
+      0
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        cart: {
+          id: cart.id,
+          items: cart.items,
+          totalItems,
+          totalPrice: totalPrice.toFixed(2),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Get cart error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
