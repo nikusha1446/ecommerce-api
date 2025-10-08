@@ -42,6 +42,10 @@ export const createCheckout = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(total * 100),
       currency: 'usd',
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never',
+      },
       metadata: {
         userId,
         cartId: cart.id,
@@ -90,6 +94,40 @@ export const createCheckout = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
+    });
+  }
+};
+
+export const testConfirmPayment = async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide paymentIntentId',
+      });
+    }
+
+    const confirmedPayment = await stripe.paymentIntents.confirm(
+      paymentIntentId,
+      {
+        payment_method: 'pm_card_visa',
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment confirmed for testing',
+      data: {
+        paymentIntent: confirmedPayment,
+      },
+    });
+  } catch (error) {
+    console.error('Test confirm payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
