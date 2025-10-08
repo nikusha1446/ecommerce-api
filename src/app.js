@@ -4,6 +4,7 @@ import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/cart', cartRoutes);
+app.use('/api/v1/orders', orderRoutes);
 
 // 404 handler
 app.use((req, res) => {
