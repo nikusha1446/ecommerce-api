@@ -191,3 +191,89 @@ export const getCart = async (req, res) => {
     });
   }
 };
+
+export const updateCartItem = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { id } = req.params;
+    const { quantity } = req.body;
+
+    if (!quantity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide quantity',
+      });
+    }
+
+    if (quantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity must be greater than 0',
+      });
+    }
+
+    const cartItem = await prisma.cartItem.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        cart: true,
+        product: true,
+      },
+    });
+
+    if (!cartItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart item not found',
+      });
+    }
+
+    if (cartItem.cart.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to update this cart item',
+      });
+    }
+
+    if (cartItem.product.stock < quantity) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${cartItem.product.stock} items available in stock`,
+      });
+    }
+
+    const updatedCartItem = await prisma.cartItem.update({
+      where: {
+        id,
+      },
+      data: {
+        quantity,
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Cart item updated successfully',
+      data: {
+        cartItem: updatedCartItem,
+      },
+    });
+  } catch (error) {
+    console.error('Update cart item error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
