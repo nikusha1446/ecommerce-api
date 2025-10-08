@@ -277,3 +277,50 @@ export const updateCartItem = async (req, res) => {
     });
   }
 };
+
+export const removeCartItem = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { id } = req.params;
+
+    const cartItem = await prisma.cartItem.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        cart: true,
+      },
+    });
+
+    if (!cartItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart item not found',
+      });
+    }
+
+    if (cartItem.cart.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to remove this cart item',
+      });
+    }
+
+    await prisma.cartItem.delete({
+      where: {
+        id,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Item removed from cart',
+    });
+  } catch (error) {
+    console.error('Remove cart item error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
