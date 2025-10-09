@@ -253,3 +253,44 @@ export const confirmPayment = async (req, res) => {
     });
   }
 };
+
+export const getOrders = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const orders = await prisma.order.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        orders,
+      },
+    });
+  } catch (error) {
+    console.error('Get my orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
