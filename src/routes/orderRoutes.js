@@ -4,14 +4,14 @@ import {
   createCheckout,
   getOrderById,
   getOrders,
-  testConfirmPayment,
+  simulatePayment,
 } from '../controllers/orderController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.post('/checkout', protect, createCheckout);
-router.post('/test-confirm', testConfirmPayment);
+router.post('/simulate-payment', simulatePayment);
 router.post('/confirm', protect, confirmPayment);
 router.get('/', protect, getOrders);
 router.get('/:id', protect, getOrderById);

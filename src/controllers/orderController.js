@@ -98,7 +98,7 @@ export const createCheckout = async (req, res) => {
   }
 };
 
-export const testConfirmPayment = async (req, res) => {
+export const simulatePayment = async (req, res) => {
   try {
     const { paymentIntentId } = req.body;
 
@@ -118,13 +118,13 @@ export const testConfirmPayment = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Payment confirmed for testing',
+      message: 'Payment confirmed',
       data: {
         paymentIntent: confirmedPayment,
       },
     });
   } catch (error) {
-    console.error('Test confirm payment error:', error);
+    console.error('Simulate payment error:', error);
     res.status(500).json({
       success: false,
       message: error.message,

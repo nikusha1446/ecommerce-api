@@ -262,9 +262,9 @@ POST /orders/checkout
 Authorization: Bearer USER_TOKEN
 ```
 
-#### Test Confirm Payment (Simulates card payment)
+#### Simulate payment
 ```http
-POST /orders/test-confirm
+POST /orders/simulate-payment
 Content-Type: application/json
 
 {
@@ -272,7 +272,7 @@ Content-Type: application/json
 }
 ```
 
-#### Confirm Payment (Completes order)
+#### Confirm Payment
 ```http
 POST /orders/confirm
 Authorization: Bearer USER_TOKEN
